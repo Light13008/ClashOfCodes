@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content=" width=device-width, initial-scale=1.0">
+    <title>WebRTC Video Call</title>
+    <style>
+        video {
+            width: 300px;
+            height: 200px;
+            border: 1px solid black;
+        }
+        #drawingCanvas {
+            border: 1px solid black;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebRTC Video Call</h1>
+    <input type="text" id="room" placeholder="Room Name">
+    <button id="join-room">Join Room</button>
+    <br><br>
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <br>
+    <button id="startCall">Start Call</button>
+    <button id="endCall">End Call</button>
+    <br><br>
+    <input type="text" id="message" placeholder="Type a message...">
+    <button id="send-message">Send</button>
+    <div id="messages"></div>
+    <canvas id="drawingCanvas" width="800" height="600"></canvas>
+    <button id="clearCanvas">Clear Canvas</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
