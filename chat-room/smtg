@@ -1,0 +1,5 @@
+.
+├── app.js          # Main application file
+├── models          # Directory for Mongoose models
+│   └── User.js     # User model
+└── public          # Directory for frontend (if applicable)
