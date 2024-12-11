@@ -17,7 +17,7 @@ mongoose.connect('mongodb+srv://sarupatil0001:dog21@cluster0.dwnvs.mongodb.net/'
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serve static files from the 'public' directory
 
 // API Endpoints
 app.post('/api/login', async (req, res) => {
@@ -67,7 +67,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Socket.IO Logic
-const onlineUsers = new Map();
+const onlineUsers = new Map(); // maintains a real-time list of users who are online
 const privateRooms = {};
 
 io.on('connection', (socket) => {
@@ -91,19 +91,54 @@ io.on('connection', (socket) => {
 
         socket.join(roomID);
 
-        // Fetch chat history from the database
         const messages = await Message.find({ roomID }).sort({ timestamp: 1 });
         socket.emit('joined_private_chat', { roomID, messages });
+        console.log(`Private chat started: ${roomID}`);
+    });
+
+    // Handle WebRTC signaling
+    socket.on('webrtc_signal', ({ roomID, signal }) => {
+        socket.to(roomID).emit('webrtc_signal', signal);
     });
 
     // Handle sending private messages
     socket.on('private_message', async ({ roomID, message, sender, receiver }) => {
-        // Save the message to the database
         const newMessage = new Message({ roomID, sender, receiver, message });
         await newMessage.save();
 
-        // Emit the message to the room
         io.to(roomID).emit('receive_message', { message, sender });
+    });
+
+    // Handle call initiation
+    socket.on('call_user', ({ fromUser, toUser }) => {
+        const toUserSocketId = [...onlineUsers.entries()].find(([id, username]) => username === toUser)?.[0];
+        if (toUserSocketId) {
+            io.to(toUserSocketId).emit('incoming_call', { fromUser });
+        }
+    });
+
+    // Handle call acceptance
+    socket.on('accept_call', ({ fromUser, toUser }) => {
+        const pairKey = [fromUser, toUser].sort().join('_');
+        let roomID = privateRooms[pairKey];
+
+        if (!roomID) {
+            roomID = `room_${Date.now()}`;
+            privateRooms[pairKey] = roomID;
+        }
+
+        const fromUserSocketId = [...onlineUsers.entries()].find(([id, username]) => username === fromUser)?.[0];
+        if (fromUserSocketId) {
+            io.to(fromUserSocketId).emit('call_accepted', { roomID });
+        }
+    });
+
+    // Handle call rejection
+    socket.on('reject_call', ({ fromUser, toUser }) => {
+        const fromUserSocketId = [...onlineUsers.entries()].find(([id, username]) => username === fromUser)?.[0];
+        if (fromUserSocketId) {
+            io.to(fromUserSocketId).emit('call_rejected', { fromUser: toUser });
+        }
     });
 
     // Handle user disconnect
@@ -112,6 +147,7 @@ io.on('connection', (socket) => {
         onlineUsers.delete(socket.id);
         io.emit('update_user_list', Array.from(onlineUsers.entries()));
         console.log(`${username} disconnected`);
+        io.emit('user_disconnected', username);
     });
 });
 
