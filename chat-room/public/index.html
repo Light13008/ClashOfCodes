@@ -61,14 +61,6 @@
 <body>
     <h1>Private Chat</h1>
 
-    <h1>Login</h1>
-    <form id="loginForm">
-        <label for="username">Username:</label>
-        <input type="text" id="username" required>
-        <button type="submit">Login</button>
-    </form>
-    <p>Don't have an account? <a href="/signup.html">Sign up here</a></p>
-    
     <h2>Online Users</h2>
     <div class="user-list" id="userList"></div>
 
@@ -97,14 +89,13 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        let currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            window.location.href = '/login.html';
+        } else {
+            socket.emit('user_join', currentUser);
+        }
 
-        let currentUser = null;
-        let currentChatRoom = null;
-        let localStream;
-        let peerConnection;
-        let iceCandidatesQueue = [];
-
-        const loginForm = document.getElementById('loginForm');
         const userList = document.getElementById('userList');
         const chatBox = document.getElementById('chatBox');
         const chatWith = document.getElementById('chatWith');
@@ -118,121 +109,11 @@
         const incomingCallText = document.getElementById('incomingCallText');
         const acceptCallButton = document.getElementById('acceptCallButton');
         const rejectCallButton = document.getElementById('rejectCallButton');
-            
-               // Add WebRTC configuration
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-        
-        // Update constraints
-        const constraints = {
-            video: true,
-            audio: true
-        };
-        
-        // Update startLocalStream function
-        async function startLocalStream() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-                localVideo.srcObject = localStream;
-            } catch (err) {
-                console.error('Error accessing media devices:', err);
-            }
-        }
-        
-             // Update createPeerConnection function
-        function createPeerConnection(roomID) {
-            try {
-                peerConnection = new RTCPeerConnection(configuration);
-            
-                // Add local stream tracks to peer connection
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            
-                // Handle incoming streams
-                peerConnection.ontrack = ({ streams: [stream] }) => {
-                    remoteVideo.srcObject = stream;
-                };
-            
-                // Handle ICE candidates
-                peerConnection.onicecandidate = event => {
-                    if (event.candidate) {
-                        socket.emit('webrtc_signal', {
-                            roomID,
-                            signal: { candidate: event.candidate }
-                        });
-                    }
-                };
-            
-                peerConnection.oniceconnectionstatechange = () => {
-                    console.log('ICE Connection State:', peerConnection.iceConnectionState);
-                };
-            
-            } catch (err) {
-                console.error('Error creating peer connection:', err);
-            }
-        }
 
+        let currentChatRoom;
+        let peerConnection;
+        let localStream;
 
-               // Update webrtc_signal handler
-        socket.on('webrtc_signal', async (signal) => {
-            if (!peerConnection) {
-                console.error('Received signal but peer connection is not created');
-                return;
-            }
-        
-            try {
-                if (signal.sdp) {
-                    const sdp = new RTCSessionDescription(signal.sdp);
-                    
-                    if (signal.sdp.type === 'offer') {
-                        await peerConnection.setRemoteDescription(sdp);
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        socket.emit('webrtc_signal', {
-                            roomID: currentChatRoom,
-                            signal: { sdp: peerConnection.localDescription }
-                        });
-                    } else if (signal.sdp.type === 'answer') {
-                        await peerConnection.setRemoteDescription(sdp);
-                    }
-                } else if (signal.candidate) {
-                    try {
-                        await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
-                    } catch (err) {
-                        if (!peerConnection.remoteDescription) {
-                            iceCandidatesQueue.push(signal.candidate);
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error('Error handling signal:', err);
-            }
-        });
-
-        socket.on('joined_private_chat', async ({ roomID, messages }) => {
-            currentChatRoom = roomID;
-            messagesDiv.innerHTML = '';
-            messages.forEach(({ sender, message }) => displayMessage(sender, message));
-        });
-
-        // Handle login
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-
-            socket.emit('user_join', username);
-            currentUser = username;
-
-            alert('Logged in as ' + username);
-            loginForm.style.display = 'none';
-        });
-
-        // Update user list
         socket.on('update_user_list', (users) => {
             userList.innerHTML = '';
             users.forEach(([socketId, username]) => {
@@ -246,35 +127,34 @@
             });
         });
 
-        // Start private chat
         function initiateChat(toUser) {
             chatWith.textContent = toUser;
             socket.emit('start_private_chat', { fromUser: currentUser, toUser });
             chatBox.style.display = 'block';
         }
 
-        // Send private message
+        socket.on('joined_private_chat', ({ roomID, messages }) => {
+            currentChatRoom = roomID;
+            messages.forEach(({ sender, message }) => displayMessage(sender, message));
+        });
+
         messageForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const message = messageInput.value;
-
             socket.emit('private_message', {
                 roomID: currentChatRoom,
                 message,
                 sender: currentUser,
                 receiver: chatWith.textContent,
             });
-
             displayMessage(currentUser, message);
             messageInput.value = '';
         });
 
-        // Receive private message
         socket.on('receive_message', ({ message, sender }) => {
             displayMessage(sender, message);
         });
 
-        // Display a message in the chat box
         function displayMessage(sender, message) {
             const messageDiv = document.createElement('div');
             messageDiv.textContent = `${sender}: ${message}`;
@@ -282,12 +162,10 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // Handle call button click
         callButton.addEventListener('click', () => {
             socket.emit('call_user', { fromUser: currentUser, toUser: chatWith.textContent });
         });
 
-        // Handle incoming call
         socket.on('incoming_call', ({ fromUser }) => {
             incomingCallText.textContent = `${fromUser} is calling you.`;
             incomingCall.style.display = 'block';
@@ -311,31 +189,10 @@
             };
         });
 
-              // Update call acceptance handler
-        acceptCallButton.onclick = () => {
-            socket.emit('accept_call', { fromUser, toUser: currentUser });
-            incomingCall.style.display = 'none';
-            
-            startLocalStream().then(() => {
-                createPeerConnection(currentChatRoom);
-                peerConnection.createOffer()
-                    .then(offer => peerConnection.setLocalDescription(offer))
-                    .then(() => {
-                        socket.emit('webrtc_signal', {
-                            roomID: currentChatRoom,
-                            signal: { sdp: peerConnection.localDescription }
-                        });
-                    })
-                    .catch(err => console.error('Error creating offer:', err));
-            });
-        };
-
-        // Handle call rejected
         socket.on('call_rejected', ({ fromUser }) => {
             alert(`${fromUser} rejected your call.`);
         });
 
-        // Handle user disconnect
         socket.on('user_disconnected', (username) => {
             if (peerConnection) {
                 peerConnection.close();
@@ -346,6 +203,43 @@
                 localStream = null;
             }
             alert(`${username} has disconnected.`);
+        });
+
+        async function startLocalStream() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+            } catch (err) {
+                console.error('Error accessing media devices:', err);
+                alert('Could not access media devices. Please check your permissions.');
+            }
+        }
+
+        function createPeerConnection(roomID) {
+            peerConnection = new RTCPeerConnection();
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('webrtc_signal', { roomID, signal: { ice: event.candidate } });
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            if (localStream) {
+                localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+            }
+        }
+
+        socket.on('webrtc_signal', ({ roomID, signal }) => {
+            if (signal.sdp) {
+                peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+            }
+            if (signal.ice) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(signal.ice));
+            }
         });
     </script>
 </body>

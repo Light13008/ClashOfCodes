@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Insights</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-primary: #111111;
+            --color-bg-secondary: #1A1A1A;
+            --color-bg-tertiary: #252525;
+            --color-text-primary: #E0E0E0;
+            --color-text-secondary: #A0A0A0;
+            --color-accent-primary: #4A4A4A;
+            --color-accent-secondary: #6A6A6A;
+            --color-border: #2C2C2C;
+            --gradient-primary: linear-gradient(135deg, #2C2C2C, #1A1A1A);
+            --shadow-primary: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: 'Inter', 'system-ui', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            perspective: 1000px;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #242725; /* Elegant green background */
+            padding: 15px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 80px; /* Position below the title */
+            width: 50%;
+            z-index: 1000;
+            margin-bottom: 30px;
+            margin-left: 50%;
+            border-radius: 20px;
+        }
+
+        .navigation a {
+            color: white; /* White text for contrast */
+            text-decoration: none; /* Remove underlines */
+            margin: 0 15px;
+            margin-bottom: 0.5px;
+            font-size: 18px;
+            font-weight: bold;
+            transition: color 0.3s ease, transform 0.2s ease;
+           
+        }
+
+        .navigation a:hover {
+            color: #ffeb3b; /* Bright yellow hover effect */
+            transform: scale(1.1); /* Slightly enlarge on hover */
+        }
+
+        .navigation a:active {
+            color: #ff9800; 
+        }
+
+        .navigation a:focus {
+            outline: 2px dashed white; 
+        }
+
+        /* Main Title */
+        h1 {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 3em;
+            color: #E0E0E0; /* Title color */
+        }
+
+        /* Content Styles */
+        .content {
+            padding-top: 150px; /* Padding to avoid navbar overlap */
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--color-accent-primary);
+            border-top: 5px solid var(--color-text-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Section and Card Styles */
+        .section {
+            background: var(--color-bg-secondary);
+            border-radius: 1rem;
+            border: 1px solid var(--color-border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-primary);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .section:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: var(--color-bg-tertiary);
+            border-radius: 1rem;
+            border: 1px solid var(--color-border);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: rotate(-45deg);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        /* Grid Layout for Insights */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            background: var(--color-accent-primary);
+            color: var(--color-text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            border: 1px solid var(--color-border);
+            transition: all 0.4s ease;
+        }
+
+        .btn:hover {
+            background: var(--color-accent-secondary);
+            transform: scale(1.05);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+
+        .btn:hover::after {
+            left: 100%;
+        }
+
+        /* Avatar Styles */
+        .avatar {
+            border: 3px solid var(--color-border);
+            transition: all 0.4s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    <div class="navigation">
+        <a href="#issues-list">Issues</a>
+        <a href="#insights">Insights</a>
+        <a href="#contributors-list">Contributors</a>
+        <a href="/index.html">Online Users</a>
+        <a href="/conference.html">Conference</a>
+    </div>
+
+    <div class="container mx-auto max-w-7xl">
+        <h1 class="text-4xl font-bold mb-8 text-center text-white animate-slide-in">
+            GitHub Repository Insights
+        </h1>
+
+        <div class="space-y-8">
+            <!-- Repository Insights Section -->
+            <section class="section animate-slide-in">
+                <h2 class="text-2xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-chart-line mr-3 animate-float"></i>
+                    Repository Overview
+                </h2>
+                <div id="insights" class="insights-grid"></div>
+            </section>
+
+            <!-- Issues Section -->
+            <section class="section animate-slide-in delay-300">
+                <h2 class="text-2xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-bug mr-3 animate-pulse"></i>
+                    Issues
+                </h2>
+                <div id="issues-list" class="grid md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+            </section>
+
+            <!-- Contributors Section -->
+            <section class="section animate-slide-in delay-500">
+                <h2 class="text-2xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-users mr-3 animate-bounce"></i>
+                    Contributors
+                </h2>
+                <div id="contributors-list" class="grid md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const token = 'enter token here'; // Replace with a valid GitHub token
+        const orgName = 'flutter'; 
+        const repoName = 'flutter'; 
+        const apiHeaders = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+
+        function hideLoadingOverlay() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 500);
+        }
+
+        async function fetchRepositoryInsights() {
+            const insightsDiv = document.getElementById('insights');
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${orgName}/${repoName}`,
+                    { headers: apiHeaders }
+                );
+                const repo = await response.json();
+
+                const insights = [
+                    { 
+                        title: 'Stars', 
+                        value: repo.stargazers_count, 
+                        icon: 'fas fa-star',
+                        color: 'text-yellow-400'
+                    },
+                    { 
+                        title: 'Forks', 
+                        value: repo.forks_count, 
+                        icon: 'fas fa-code-branch',
+                        color: 'text-green-400'
+                    },
+                    { 
+                        title: 'Open Issues', 
+                        value: repo.open_issues_count, 
+                        icon: 'fas fa-exclamation-circle',
+                        color: 'text-red-400'
+                    },
+                    { 
+                        title: 'Watchers', 
+                        value: repo.subscribers_count, 
+                        icon: 'fas fa-eye',
+                        color: 'text-blue-400'
+                    }
+                ];
+
+                insights.forEach(insight => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="text-4xl ${insight.color} mb-2">
+                            <i class="${insight.icon}"></i>
+                        </div>
+                        <div class="text-2xl font-bold">${insight.value}</div>
+                        <div class="text-sm text-gray-400">${insight.title}</div>
+                    `;
+                    insightsDiv.appendChild(card);
+                });
+
+                hideLoadingOverlay();
+            } catch (error) {
+                console.error('Error fetching repository insights:', error);
+            }
+        }
+
+        async function fetchIssues() {
+            const issuesList = document.getElementById('issues-list');
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${orgName}/${repoName}/issues`,
+                    { headers: apiHeaders }
+                );
+                const issues = await response.json();
+
+                issues.forEach(issue => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="text-xl font-bold mb-2">${issue.title}</div>
+                        <div class="text-sm text-gray-400">${issue.user.login}</div>
+                        <div class="text-sm text-gray-400">${new Date(issue.created_at).toLocaleDateString()}</div>
+                    `;
+                    issuesList.appendChild(card);
+                });
+
+                hideLoadingOverlay();
+            } catch (error) {
+                console.error('Error fetching issues:', error);
+            }
+        }
+
+        async function fetchContributors() {
+            const contributorsList = document.getElementById('contributors-list');
+            try {
+                const response = await fetch(
+                    `https://api.github.com/repos/${orgName}/${repoName}/contributors`,
+                    { headers: apiHeaders }
+                );
+                const contributors = await response.json();
+
+                contributors.forEach(contributor => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <img src="${contributor.avatar_url}" alt="${contributor.login}" class="avatar mb-2">
+                        <div class="text-xl font-bold">${contributor.login}</div>
+                        <div class="text-sm text-gray-400">${contributor.contributions} contributions</div>
+                    `;
+                    contributorsList.appendChild(card);
+                });
+
+                hideLoadingOverlay();
+            } catch (error) {
+                console.error('Error fetching contributors:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRepositoryInsights();
+            fetchIssues();
+            fetchContributors();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Organization Projects Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+       :root {
+    /* Unified color palette */
+    --color-bg-primary: #121212; /* Dark background */
+    --color-bg-secondary: #1e1e1e; /* Slightly lighter background */
+    --color-bg-tertiary: #30363d; /* Mid-tone background for contrast */
+    --color-text-primary: #e0e0e0; /* Main text color */
+    --color-text-secondary: #a0a0a0; /* Secondary text color */
+    --color-accent-primary: #3498db; /* Vibrant blue accent */
+    --color-accent-secondary: #2ecc71; /* Vibrant green accent */
+    --color-border: #333333; /* Border color */
+    --color-priority-high: #da3633; /* High-priority indicator */
+    --color-priority-medium: #d29922; /* Medium-priority indicator */
+    --color-priority-low: #3fb950; /* Low-priority indicator */
+    --color-hover-overlay: rgba(52, 152, 219, 0.1); /* Hover overlay with blue accent */
+    
+    --border-radius: 8px; /* Rounded corners */
+    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth transitions */
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); /* Subtle shadow effect */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-bg-tertiary) var(--color-bg-secondary);
+}
+
+*::-webkit-scrollbar {
+    width: 12px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--color-bg-tertiary);
+    border-radius: 20px;
+    border: 3px solid var(--color-bg-secondary);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+/* Header */
+.header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg-secondary);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+}
+
+.header:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.header h1 {
+    color: var(--color-text-primary);
+    font-size: 1.8em;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: var(--transition);
+}
+
+.header h1 i {
+    color: var(--color-accent-primary);
+    transform: scale(1);
+    transition: var(--transition);
+}
+
+.header:hover h1 i {
+    transform: scale(1.1) rotate(360deg);
+}
+
+/* Clock Styles */
+.clock-container {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.clock {
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+    padding: 15px;
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.clock::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg, 
+        transparent, 
+        var(--color-hover-overlay), 
+        transparent
+    );
+    transition: var(--transition);
+}
+
+.clock:hover::before {
+    left: 100%;
+}
+
+.clock:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+
+.clock-time {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+    transition: var(--transition);
+}
+
+.clock:hover .clock-time {
+    letter-spacing: 1px;
+}
+
+.clock-location {
+    color: var(--color-text-secondary);
+    font-size: 0.9em;
+}
+
+/* Projects Section */
+#projects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.project-card {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+.project-card:hover::after {
+    transform: scaleX(1);
+}
+
+.project-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.priority {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: var(--transition);
+}
+
+.priority-high {
+    background-color: var(--color-priority-high);
+    color: white;
+}
+
+.priority-medium {
+    background-color: var(--color-priority-medium);
+    color: white;
+}
+
+.priority-low {
+    background-color: var(--color-priority-low);
+    color: white;
+}
+
+.project-title {
+    color: var(--color-accent-primary);
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    transition: var(--transition);
+}
+
+.project-card:hover .project-title {
+    transform: translateX(10px);
+}
+
+.project-description {
+    color: var(--color-text-secondary);
+    margin-bottom: 15px;
+    flex-grow: 1;
+}
+
+.project-links a {
+    color: var(--color-accent-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+    display: inline-block;
+    position: relative;
+}
+
+.project-links a::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    bottom: -3px;
+    left: 0;
+    background-color: var(--color-accent-primary);
+    transform: scaleX(0);
+    transition: var(--transition);
+}
+
+.project-links a:hover::after {
+    transform: scaleX(1);
+}
+
+.project-links a:hover {
+    color: var(--color-accent-secondary);
+}
+
+.deadline-input input {
+    width: 100%;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    padding: 8px;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.deadline-input input:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px var(--color-hover-overlay);
+}
+
+.project-deadline {
+    color: var(--color-text-secondary);
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+/* Sidebars */
+.sidebar1 {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    margin-bottom: 300px;
+}
+
+.sidebar1:hover {
+    transform: translateX(5px);
+}
+
+.sidebar1-section h2 {
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-accent-primary);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    transition: var(--transition);
+}
+
+
+.sidebar2 {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    width: 50%;
+    margin-left: 102%;
+    margin-top: -300px;
+}
+
+.sidebar1:hover {
+    transform: translateX(5px);
+}
+
+.sidebar1-section h2 {
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-accent-primary);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    transition: var(--transition);
+}
+
+/* Meeting Form */
+#meeting-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#meeting-form input,
+#meeting-form select {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    padding: 10px;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+#meeting-form input:focus,
+#meeting-form select:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px var(--color-hover-overlay);
+}
+
+.btn {
+    background-color: var(--color-accent-primary);
+    color: var(--color-bg-primary);
+    border: none;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg, 
+        transparent, 
+        rgba(255,255,255,0.3), 
+        transparent
+    );
+    transition: var(--transition);
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover {
+    background-color: var(--color-accent-secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Meeting List */
+.meeting-list {
+    list-style-type: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.meeting-item {
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.meeting-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--color-accent-primary);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: var(--transition);
+}
+
+.meeting-item:hover::before {
+    transform: scaleY(1);
+}
+
+.meeting-item:hover {
+    transform: translateX(10px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.meeting-item h3 {
+    color: var(--color-accent-primary);
+    margin-bottom: 5px;
+    transition: var(--transition);
+}
+
+.meeting-item:hover h3 {
+    letter-spacing: 0.5px;
+}
+
+.meeting-item p {
+    color: var(--color-text-secondary);
+}
+
+.btn-delete {
+    background-color: var(--color-priority-high);
+    padding: 8px 12px;
+    margin-left: 10px;
+    transition: var(--transition);
+}
+
+.btn-delete:hover {
+    transform: rotate(5deg) scale(1.05);
+    opacity: 0.9;
+}
+
+#loading {
+    text-align: center;
+    color: var(--color-text-secondary);
+    margin: 20px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+
+    .clock-container {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    #projects {
+        grid-template-columns: 1fr;
+    }
+}    
+
+#calendar {
+        margin-top: 20px;
+    }
+
+    #calendar table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+    #calendar th,
+    #calendar td {
+        padding: 10px;
+        border: 1px solid var(--color-border);
+        background-color: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        transition: var(--transition);
+    }
+
+    #calendar td.deadline-day {
+        background-color: var(--color-priority-high);
+        color: white;
+        font-weight: bold;
+        position: relative;
+    }
+
+    #calendar td.deadline-day::after {
+        content: '•';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        font-size: 1.2em;
+        color: white;
+    }
+
+    #calendar th {
+        background-color: var(--color-bg-tertiary);
+        color: var(--color-accent-primary);
+        font-weight: 600;
+    }
+   
+    .navigation {
+        display: flex;
+        margin-top: 15px;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-left: 1150px;
+    }
+
+    .navigation a {
+        text-decoration: none;
+        color: #ffffff;
+        background-color: #007BFF;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .navigation a:hover {
+        background-color: #0056b3;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .navigation a:active {
+        background-color: #003d82;
+        transform: translateY(0);
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+    }
+
+
+
+
+</style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="issues.html">Go to issues</a>
+    </div>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fab fa-github"></i>
+                Projects Dashboard
+            </h1>
+        </div>
+
+        <div class="clock-container">
+            <div id="local-clock" class="clock">
+                <div class="clock-time" id="local-time"></div>
+                <div class="clock-location" id="local-location"></div>
+            </div>
+            <div id="org-clock" class="clock">
+                <div class="clock-time" id="org-time"></div>
+                <div class="clock-location">San Francisco, CA, USA</div>
+            </div>
+        </div>
+
+        <div>
+            <div id="loading">Loading projects...</div>
+            <div id="projects" class="projects-container"></div>
+        </div>
+
+        <div class="sidebar1">
+            <div class="sidebar-section">
+                <h2>Schedule a Meeting</h2>
+                <form id="meeting-form">
+                    <input type="text" id="meeting-title" placeholder="Meeting Title" required>
+                    <select id="meeting-project" required>
+                        <option value="">Select Project</option>
+                    </select>
+                    <input type="datetime-local" id="meeting-datetime" required>
+                    <input type="text" id="meeting-participants" placeholder="Participants (comma-separated emails)" required>
+                    <button type="submit" class="btn">Schedule Meeting</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="sidebar2">
+            <div class="sidebar-section">
+                <h2>Upcoming Meetings</h2>
+                <ul id="meeting-list" class="meeting-list"></ul>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar3">
+        <div class="sidebar-section">
+            <h2>Project Deadlines Calendar</h2>
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_TOKEN = 'enter token here';
+        const ORGANIZATION = 'flutter';
+        
+        function updateClocks() {
+            const localTime = new Date();
+            const localTimeElement = document.getElementById('local-time');
+            const localLocationElement = document.getElementById('local-location');
+            
+            const sfTime = new Date().toLocaleString('en-US', { 
+                timeZone: 'America/Los_Angeles', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            });
+            const orgTimeElement = document.getElementById('org-time');
+            const localTimeFormatted = localTime.toLocaleString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            });
+            const localTimezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            localTimeElement.textContent = localTimeFormatted;
+            localLocationElement.textContent = localTimezoneName;
+            
+            orgTimeElement.textContent = sfTime;
+        }
+        let meetings = JSON.parse(localStorage.getItem('meetings')) || [];
+        let projects = JSON.parse(localStorage.getItem('projects')) || {};
+        document.getElementById('meeting-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const title = document.getElementById('meeting-title').value;
+            const project = document.getElementById('meeting-project').value;
+            const datetime = document.getElementById('meeting-datetime').value;
+            const participants = document.getElementById('meeting-participants').value;
+            const meeting = { 
+                id: Date.now(), // Unique identifier
+                title, 
+                project, 
+                datetime, 
+                participants 
+            };
+            
+            meetings.push(meeting);
+            localStorage.setItem('meetings', JSON.stringify(meetings));
+            populateMeetings();
+            this.reset();
+        });
+        function populateMeetings() {
+            const meetingList = document.getElementById('meeting-list');
+            meetingList.innerHTML = '';
+            meetings.slice(-5).reverse().forEach(meeting => {
+                const li = document.createElement('li');
+                li.classList.add('meeting-item');
+                li.innerHTML = `
+                    <div>
+                        <h3>${meeting.title}</h3>
+                        <p><strong>Project:</strong> ${meeting.project}</p>
+                        <p><strong>Time:</strong> ${new Date(meeting.datetime).toLocaleString()}</p>
+                        <p><strong>Participants:</strong> ${meeting.participants}</p>
+                    </div>
+                    <button onclick="deleteMeeting(${meeting.id})" class="btn btn-delete">Delete</button>
+                `;
+                meetingList.appendChild(li);
+            });
+        }
+        function deleteMeeting(meetingId) {
+            meetings = meetings.filter(meeting => meeting.id !== meetingId);
+            localStorage.setItem('meetings', JSON.stringify(meetings));
+            populateMeetings();
+        }
+        function determinePriority(deadline) {
+            if (!deadline) return 'low';
+            const today = new Date();
+            const deadlineDate = new Date(deadline);
+            const daysUntilDeadline = (deadlineDate - today) / (1000 * 60 * 60 * 24);
+            if (daysUntilDeadline <= 30) return 'high';
+            if (daysUntilDeadline <= 90) return 'medium';
+            return 'low';
+        }
+        
+    async function fetchAllOrganizationProjects() {
+        const projectsContainer = document.getElementById('projects');
+        const projectSelect = document.getElementById('meeting-project');
+        const loadingIndicator = document.getElementById('loading');
+                    projectsContainer.innerHTML = '';
+        projectSelect.innerHTML = '<option value="">Select Project</option>';
+        try {
+            let allRepos = [];
+            let page = 1;
+            let hasMorePages = true;
+            while (hasMorePages) {
+                const response = await fetch(`https://api.github.com/orgs/${ORGANIZATION}/repos?per_page=100&page=${page}`, {
+                    headers: { Authorization: `token ${GITHUB_TOKEN}` },
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch repositories');
+                }
+                const repos = await response.json();
+                if (repos.length === 0) {
+                    hasMorePages = false;
+                } else {
+                    allRepos = allRepos.concat(repos);
+                    page++;
+                }
+            }
+            // Map and store projects in localStorage
+            projects = allRepos.reduce((acc, repo) => {
+                acc[repo.id] = {
+                    id: repo.id,
+                    name: repo.name,
+                    description: repo.description || 'No description provided.',
+                    deadline: '', // Placeholder for user-added deadlines
+                };
+                return acc;
+            }, {});
+            localStorage.setItem('projects', JSON.stringify(projects));
+            populateProjects();
+            populateProjectDropdown();
+            // Hide the loading indicator
+            loadingIndicator.style.display = 'none';
+        } catch (error) {
+            console.error(error);
+            loadingIndicator.textContent = 'Failed to load projects.';
+        }
+    }
+    // Populate project cards
+    function populateProjects() {
+        const projectsContainer = document.getElementById('projects');
+        projectsContainer.innerHTML = '';
+        Object.values(projects).forEach((project) => {
+            const priorityClass = `priority-${determinePriority(project.deadline)}`;
+            const card = document.createElement('div');
+            card.classList.add('project-card');
+            card.innerHTML = `
+                <span class="priority ${priorityClass}">${priorityClass.split('-')[1]}</span>
+                <h3 class="project-title">${project.name}</h3>
+                <p class="project-description">${project.description}</p>
+                <div class="deadline-input">
+                    <input 
+                        type="date" 
+                        id="deadline-${project.id}" 
+                        value="${project.deadline}" 
+                        onchange="updateDeadline(${project.id}, this.value)"
+                    />
+                </div>
+                <p class="project-deadline">${project.deadline ? `Deadline: ${project.deadline}` : 'No deadline set'}</p>
+                <div class="project-links">
+                    <a href="https://github.com/${ORGANIZATION}/${project.name}" target="_blank">View on GitHub</a>
+                </div>
+            `;
+            projectsContainer.appendChild(card);
+        });
+    }
+    function updateDeadline(projectId, newDeadline) {
+    if (projects[projectId]) {
+        projects[projectId].deadline = newDeadline;
+        localStorage.setItem('projects', JSON.stringify(projects));
+        populateProjects();
+        renderCalendar(); // Re-render the calendar to reflect changes
+    }
+}
+
+    function populateProjectDropdown() {
+        const projectSelect = document.getElementById('meeting-project');
+        Object.values(projects).forEach((project) => {
+            const option = document.createElement('option');
+            option.value = project.name;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+    }
+    function initialize() {
+        updateClocks();
+        setInterval(updateClocks, 1000);
+        populateMeetings();
+        fetchAllOrganizationProjects();
+    }
+    document.addEventListener('DOMContentLoaded', initialize);
+
+
+    const projectDeadlines = [
+        { title: "Project A", date: "2024-12-10" },
+        { title: "Project B", date: "2024-12-15" },
+        { title: "Project C", date: "2024-12-20" },
+    ];
+    function renderCalendar() {
+    const calendar = document.getElementById('calendar');
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
+    // Fetch deadlines dynamically from the projects object
+    const deadlines = Object.values(projects)
+        .filter(project => project.deadline) // Only include projects with a deadline
+        .map(project => new Date(project.deadline).toISOString().split('T')[0]);
+
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    let calendarHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th>
+                    <th>Thu</th><th>Fri</th><th>Sat</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+    `;
+
+    // Fill initial empty cells
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        calendarHTML += `<td></td>`;
+    }
+
+    // Add days to calendar
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${currentYear}-${(currentMonth + 1)
+            .toString()
+            .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const isDeadline = deadlines.includes(dateString);
+
+        calendarHTML += `
+            <td class="${isDeadline ? 'deadline-day' : ''}">
+                ${day}
+            </td>
+        `;
+
+        // Break row after Saturday
+        if ((firstDayOfMonth + day) % 7 === 0) {
+            calendarHTML += `</tr><tr>`;
+        }
+    }
+
+    // Fill trailing empty cells
+    const trailingEmptyCells = (7 - (firstDayOfMonth + daysInMonth) % 7) % 7;
+    for (let i = 0; i < trailingEmptyCells; i++) {
+        calendarHTML += `<td></td>`;
+    }
+
+    calendarHTML += `</tr></tbody></table>`;
+    calendar.innerHTML = calendarHTML;
+}
+
+
+    document.addEventListener('DOMContentLoaded', renderCalendar);
+    </script>
+</body>
+</html>

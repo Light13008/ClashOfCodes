@@ -103,8 +103,12 @@ io.on('connection', (socket) => {
 
     // Handle sending private messages
     socket.on('private_message', async ({ roomID, message, sender, receiver }) => {
+        console.log('Received private message:', { roomID, message, sender, receiver });
+
         const newMessage = new Message({ roomID, sender, receiver, message });
         await newMessage.save();
+
+        console.log('Broadcasting message to room:', roomID);
 
         io.to(roomID).emit('receive_message', { message, sender });
     });
@@ -153,3 +157,6 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+//can you give me complete code in one single code snippet without changing the other features,
+//MAKE SURE OTHER FEATURES AND FUNCTIONS SHOULD NOT GET EFFECTED,
