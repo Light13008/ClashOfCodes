@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
@@ -98,7 +98,7 @@ io.on('connection', (socket) => {
 
     // Handle WebRTC signaling
     socket.on('webrtc_signal', ({ roomID, signal }) => {
-        socket.to(roomID).emit('webrtc_signal', signal);
+        socket.to(roomID).emit('webrtc_signal', { roomID, signal });
     });
 
     // Handle sending private messages
@@ -157,6 +157,3 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-//can you give me complete code in one single code snippet without changing the other features,
-//MAKE SURE OTHER FEATURES AND FUNCTIONS SHOULD NOT GET EFFECTED,
